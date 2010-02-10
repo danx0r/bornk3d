@@ -26,7 +26,7 @@ uvs = []
 for v in verts:
     pos = v.getElementsByTagName("position")[0]
     norm = v.getElementsByTagName("normal")[0]
-    uv = v.getElementsByTagName("texcoord")[0]
+    uv = v.getElementsByTagName("texcoord")[-1]     #FIXME: need to figure out which UV's to get based on material
     px = pos.getAttribute("x")
     py = pos.getAttribute("y")
     pz = pos.getAttribute("z")
