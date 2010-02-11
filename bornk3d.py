@@ -21,13 +21,15 @@ f=open(fscript)
 lins = f.readlines()
 f.close()
 uvsets = {}
+dltextures = []
 for i, lin in enumerate(lins):
     lin = lin.strip()
     if lin[:13]=="texture_unit ":
         unit = lin[13:]
     if ".dds" in lin and lin[:8]=="texture ":
         print >> sys.stderr, "  texture unit:", unit
-        print >> sys.stderr, "    color texture:", lin.strip()[8:]
+        print >> sys.stderr, "    texture:", lin[8:]
+        dltextures.append(lin[8:])
         nxt = lins[i+1].strip()
         if nxt[:14]=="tex_coord_set ":
             uvsets[unit] = int(nxt[14])
@@ -107,3 +109,21 @@ for i, j in enumerate(indices):
 print "</faces>"
 print "</mesh>"
 
+print >> sys.stderr, "attempting to download texture names"
+for tx in dltextures:
+    cmd = "wget http://www.sirikata.com/content/names/" + tx
+    print >> sys.stderr, "cmd:", cmd
+    os.system(cmd)
+
+print >> sys.stderr, "getting assets"
+for tx in dltextures:
+    f = open(tx)
+    s = f.read().strip()
+    f.close()
+    hsh = s[9:]
+    cmd = "wget http://www.sirikata.com/content/assets/" + hsh
+    print >> sys.stderr, "cmd:", cmd
+    os.system(cmd)
+    cmd = "mv " + hsh + " " + tx
+    print >> sys.stderr, "cmd:", cmd
+    os.system(cmd)
