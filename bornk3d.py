@@ -4,16 +4,40 @@ from xml.dom import minidom
 def fix(n):
     return "%8.6f" % n
 
-fn = sys.argv[1]
-name = fn[:-9]
-if("/") in fn:
-    name = fn[fn.rindex("/")+1:-9]
+name = sys.argv[1]
+fmodel = name + "/models/" + name + ".mesh.xml"
+print >> sys.stderr, "model:", fmodel
 
-x = minidom.parse(fn)
+x = minidom.parse(fmodel)
 
 mesh = x.getElementsByTagName("mesh")[0]
 submeshes = x.getElementsByTagName("submeshes")[0]
 submesh = submeshes.getElementsByTagName("submesh")[0]
+material = submesh.getAttribute("material")
+print >> sys.stderr, "material:", material
+fscript = name + "/materials/scripts/" + name + ".os"
+print >> sys.stderr, "script:", fscript
+f=open(fscript)
+lins = f.readlines()
+f.close()
+uvsets = {}
+for i, lin in enumerate(lins):
+    lin = lin.strip()
+    if lin[:13]=="texture_unit ":
+        unit = lin[13:]
+    if ".dds" in lin and lin[:8]=="texture ":
+        print >> sys.stderr, "  texture unit:", unit
+        print >> sys.stderr, "    color texture:", lin.strip()[8:]
+        nxt = lins[i+1].strip()
+        if nxt[:14]=="tex_coord_set ":
+            uvsets[unit] = int(nxt[14])
+            print >> sys.stderr, "    uv set for this texture:", uvsets[unit]
+        else:
+            print >> sys.stderr, "expected tex_coord_set..."
+            0/0
+uvset = uvsets["Diffuse"]
+print >> sys.stderr, "capturing Diffuse uvset (" + str(uvset) + ")"
+
 faces = submesh.getElementsByTagName("faces")[0]
 geometry = submesh.getElementsByTagName("geometry")[0]
 vertexcount = int(geometry.getAttribute("vertexcount"))
@@ -26,7 +50,7 @@ uvs = []
 for v in verts:
     pos = v.getElementsByTagName("position")[0]
     norm = v.getElementsByTagName("normal")[0]
-    uv = v.getElementsByTagName("texcoord")[-1]     #FIXME: need to figure out which UV's to get based on material
+    uv = v.getElementsByTagName("texcoord")[uvset]
     px = pos.getAttribute("x")
     py = pos.getAttribute("y")
     pz = pos.getAttribute("z")
