@@ -1,6 +1,8 @@
 import sys, time, os
 from xml.dom import minidom
 
+Z_UP=True       #converting from old Sirikata, new_z = old_y, new_y = -old_z
+
 def fix(n):
     return "%8.6f" % n
 
@@ -61,8 +63,12 @@ for v in verts:
     nz = norm.getAttribute("z")
     u = uv.getAttribute("u")
     v = uv.getAttribute("v")
-    positions += [float(px), float(py), float(pz)]
-    normals += [float(nx), float(ny), float(nz)]
+    if Z_UP:
+        positions += [float(px), -float(pz), float(py)]
+        normals += [float(nx), -float(nz), float(ny)]
+    else:
+        positions += [float(px), float(py), float(pz)]
+        normals += [float(nx), float(ny), float(nz)]
     uvs += [float(u), float(v)]
 
 indices = []
