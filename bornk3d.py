@@ -83,11 +83,11 @@ for i, lin in enumerate(lins):
             0/0
 for i in uvsets:
     uvset = uvsets[i]
-    if uvset != 0:
-        print >> sys.stderr, "uvset conflict! <enter> to continue?"
-        r = raw_input()
-        if len(r) and r[0]!="y":
-            exit()
+##    if uvset != 0:
+##        print >> sys.stderr, "***WARNING*** uvset conflict!"
+##        r = raw_input()
+##        if len(r) and r[0]!="y":
+##            exit()
 
 print >> sys.stderr, "capturing Diffuse uvset (" + str(uvset) + ")"
 
