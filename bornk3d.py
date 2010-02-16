@@ -117,9 +117,12 @@ print "</mesh>"
 
 print >> sys.stderr, "attempting to download texture names"
 for tx in dltextures:
-    cmd = "wget http://www.sirikata.com/content/names/" + tx
-    print >> sys.stderr, "cmd:", cmd
-    os.system(cmd)
+    if os.path.exists(tx):
+        print >> sys.stderr, tx, "exists -- not downloading"
+    else:
+        cmd = "wget http://www.sirikata.com/content/names/" + tx
+        print >> sys.stderr, "cmd:", cmd
+        os.system(cmd)
 
 print >> sys.stderr, "getting assets"
 for tx in dltextures:
@@ -127,9 +130,12 @@ for tx in dltextures:
     s = f.read().strip()
     f.close()
     hsh = s[9:]
-    cmd = "wget http://www.sirikata.com/content/assets/" + hsh
-    print >> sys.stderr, "cmd:", cmd
-    os.system(cmd)
-    cmd = "mv " + hsh + " " + tx
-    print >> sys.stderr, "cmd:", cmd
-    os.system(cmd)
+    if len(hsh)==64:
+        cmd = "wget http://www.sirikata.com/content/assets/" + hsh
+        print >> sys.stderr, "cmd:", cmd
+        os.system(cmd)
+        cmd = "mv " + hsh + " " + tx
+        print >> sys.stderr, "cmd:", cmd
+        os.system(cmd)
+    else:
+        print >> sys.stderr, "bad hash file, wrong length"
