@@ -1,25 +1,59 @@
 import sys, time, os
 from xml.dom import minidom
-
 Z_UP=True       #converting from old Sirikata, new_z = old_y, new_y = -old_z
 
+def mv(f1,f2):
+    cmd = "mv " + f1 + " " + f2
+    do(cmd)
+
+def do(s):
+    os.system(s)
+    
 def fix(n):
     return "%8.6f" % n
 
+def getCdnAsset(fn):
+    if not os.path.exists(fn):
+        cmd = "wget http://www.sirikata.com/content/names/" + fn
+        
+        do(cmd)
+        f = open(fn)
+        s = f.read().strip()
+        f.close()
+        hsh = s[9:]
+        if len(hsh)==64:
+            cmd = "wget http://www.sirikata.com/content/assets/" + hsh
+            
+            do(cmd)
+            cmd = "mv " + hsh + " " + fn
+            
+            do(cmd)
+        else:
+            print >> sys.stderr, "bad hash file, wrong length"
+    else:
+        print >> sys.stderr, "won't overwrite", fn
+
+if not os.path.exists("data"):
+    do("mkdir data")
 name = sys.argv[1]
-fmodel = name + "/models/" + name + ".mesh.xml"
+getCdnAsset(name+".mesh")
+mv(name+".mesh", "data/")
+do("OgreXMLConverter " + "data/"+name+".mesh")
+fmodel = name + ".mesh.xml"
 print >> sys.stderr, "model:", fmodel
 
-x = minidom.parse(fmodel)
+x = minidom.parse("data/"+fmodel)
 
 mesh = x.getElementsByTagName("mesh")[0]
 submeshes = x.getElementsByTagName("submeshes")[0]
 submesh = submeshes.getElementsByTagName("submesh")[0]
 material = submesh.getAttribute("material")
 print >> sys.stderr, "material:", material
-fscript = name + "/materials/scripts/" + name + ".os"
+fscript = name + ".os"
 print >> sys.stderr, "script:", fscript
-f=open(fscript)
+getCdnAsset(fscript)
+mv(fscript, "data/"+fscript)
+f=open("data/"+fscript)
 lins = f.readlines()
 f.close()
 uvsets = {}
@@ -31,7 +65,7 @@ for i, lin in enumerate(lins):
     if ".dds" in lin and lin[:8]=="texture ":
         print >> sys.stderr, "  texture unit:", unit
         print >> sys.stderr, "    texture:", lin[8:]
-        dltextures.append(lin[8:])
+        dltextures.append(lin[8:].strip())
         nxt = lins[i+1].strip()
         if nxt[:14]=="tex_coord_set ":
             uvsets[unit] = int(nxt[14])
@@ -84,58 +118,46 @@ for t in triangles:
 ##print "uvs:", uvs
 ##print "indices:", indices
 
-print '<mesh id="' + name + '">'
-print "<positions>",
+fglge = open("data/" + name + ".glge", "w")
+print >> fglge, '<mesh id="' + name + '">'
+print >> fglge,  "<positions>",
 for i, p in enumerate(positions):
     if i==len(positions)-1:
-        print fix(p),
+        print >> fglge, fix(p),
     else:
-        print fix(p) + ",",
-print "</positions>"
-print "<normals>",
+        print>> fglge, fix(p) + ",",
+print >> fglge,  "</positions>"
+print >> fglge,  "<normals>",
 for i, n in enumerate(normals):
     if i==len(normals)-1:
-        print fix(n),
+        print >> fglge,  fix(n),
     else:
-        print fix(n) + ",",
-print "</normals>"
-print "<uv1>",
+        print >> fglge,  fix(n) + ",",
+print >> fglge,  "</normals>"
+print >> fglge,  "<uv1>",
 for i, j in enumerate(uvs):
     if i==len(uvs)-1:
-        print fix(j),
+        print >> fglge,  fix(j),
     else:
-        print fix(j) + ",",
-print "</uv1>"
-print "<faces>",
+        print >> fglge,  fix(j) + ",",
+print >> fglge,  "</uv1>"
+print >> fglge,  "<faces>",
 for i, j in enumerate(indices):
     if i==len(indices)-1:
-        print j,
+        print >> fglge,  j,
     else:
-        print str(j) + ",",
-print "</faces>"
-print "</mesh>"
+        print >> fglge,  str(j) + ",",
+print >> fglge,  "</faces>"
+print >> fglge,  "</mesh>"
 
-print >> sys.stderr, "attempting to download texture names"
-for tx in dltextures:
-    if os.path.exists(tx):
-        print >> sys.stderr, tx, "exists -- not downloading"
-    else:
-        cmd = "wget http://www.sirikata.com/content/names/" + tx
-        print >> sys.stderr, "cmd:", cmd
-        os.system(cmd)
+fglge.close()
 
-print >> sys.stderr, "getting assets"
+print >> sys.stderr, "attempting to download textures"
 for tx in dltextures:
-    f = open(tx)
-    s = f.read().strip()
-    f.close()
-    hsh = s[9:]
-    if len(hsh)==64:
-        cmd = "wget http://www.sirikata.com/content/assets/" + hsh
-        print >> sys.stderr, "cmd:", cmd
-        os.system(cmd)
-        cmd = "mv " + hsh + " " + tx
-        print >> sys.stderr, "cmd:", cmd
-        os.system(cmd)
-    else:
-        print >> sys.stderr, "bad hash file, wrong length"
+    if tx[0] == '"' and tx[-1] == '"':
+        tx = tx[1:-1]
+    if tx[:8] == "meru:///":
+        tx = tx[8:]
+    print "tx:", tx
+    getCdnAsset(tx)
+    mv(tx, "data/"+tx)
