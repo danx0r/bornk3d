@@ -1,0 +1,56 @@
+#!/bin/bash
+
+python bornk3d.py b7_firedoor_door
+
+##python bornk3d.py b7_firedoor_door_01
+
+python bornk3d.py b7_light_04_track
+
+python bornk3d.py b7_light_hanging05_nocov
+
+python bornk3d.py b7_skylght_drop_cloth
+
+python bornk3d.py bldng7_lightrack
+
+python bornk3d.py bornh_bldg_07_ceiling_drop
+
+python bornk3d.py bornh_bldg_07_floor
+
+python bornk3d.py bornh_bldg_07_roof
+
+python bornk3d.py bornh_bldg_07_skylights
+
+python bornk3d.py bornh_bldg_07_walls_ext_01
+
+python bornk3d.py bornh_bldg_07_walls_ext_02
+
+python bornk3d.py bornh_bldg_07_walls_int_01
+
+python bornk3d.py bornh_bldg_07_walls_int_02
+
+python bornk3d.py bornh_bldg_08_ceiling_drop
+
+python bornk3d.py bornh_bldg_08_floor
+
+python bornk3d.py bornh_bldg_08_roof
+
+python bornk3d.py bornh_bldg_08_skylights
+
+python bornk3d.py bornh_bldg_08_wall_ext_01
+
+python bornk3d.py bornh_bldg_08_wall_ext_02
+
+python bornk3d.py bornh_bldg_08_wall_ext_03
+
+python bornk3d.py bornh_bldg_08_wall_int_01
+
+python bornk3d.py bornh_bldg_08_wall_int_02
+
+python bornk3d.py bornh_bldg_08_wall_int_03
+
+python bornk3d.py bornh_bldg_08_wall_int_01_dup
+
+python bornk3d.py straightstair_smallgallery
+
+python bornk3d.py bornh_door_gallery_connector_01
+

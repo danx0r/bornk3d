@@ -1,3 +1,6 @@
+#this version attempts to get all materials/textures/uvsets
+#still does not map GLGE UV1, UV2 properly
+
 import sys, time, os
 from xml.dom import minidom
 Z_UP=True       #converting from old Sirikata, new_z = old_y, new_y = -old_z
@@ -65,8 +68,8 @@ for i, lin in enumerate(lins):
     lin = lin.strip()
     if lin[:9]=="material ":
         osMat = lin[9:].split()[0]
-    if not osMat==matname:
-        continue
+##    if not osMat==matname:
+##        continue
     if lin[:13]=="texture_unit ":
         unit = lin[13:]
     if ".dds" in lin and lin[:8]=="texture ":
@@ -81,15 +84,6 @@ for i, lin in enumerate(lins):
         else:
             print >> sys.stderr, "expected tex_coord_set..."
             0/0
-for i in uvsets:
-    uvset = uvsets[i]
-##    if uvset != 0:
-##        print >> sys.stderr, "***WARNING*** uvset conflict!"
-##        r = raw_input()
-##        if len(r) and r[0]!="y":
-##            exit()
-
-print >> sys.stderr, "capturing Diffuse uvset (" + str(uvset) + ")"
 
 faces = submesh.getElementsByTagName("faces")[0]
 geometry = submesh.getElementsByTagName("geometry")[0]
@@ -98,27 +92,32 @@ vertexbuffer = geometry.getElementsByTagName("vertexbuffer")[0]
 verts = vertexbuffer.getElementsByTagName("vertex")
 positions = []
 normals = []
-uvs = []
+uvbufs = []
 
 for v in verts:
     pos = v.getElementsByTagName("position")[0]
     norm = v.getElementsByTagName("normal")[0]
-    uv = v.getElementsByTagName("texcoord")[uvset]
     px = pos.getAttribute("x")
     py = pos.getAttribute("y")
     pz = pos.getAttribute("z")
     nx = norm.getAttribute("x")
     ny = norm.getAttribute("y")
     nz = norm.getAttribute("z")
-    u = uv.getAttribute("u")
-    v = uv.getAttribute("v")
     if Z_UP:
         positions += [float(px), -float(pz), float(py)]
         normals += [float(nx), -float(nz), float(ny)]
     else:
         positions += [float(px), float(py), float(pz)]
         normals += [float(nx), float(ny), float(nz)]
-    uvs += [float(u), float(v)]
+    for i in uvsets:
+        uvset = uvsets[i]
+        print "uvset:", i, uvset
+        while len(uvbufs) < uvset+1:
+            uvbufs.append([])
+        uv = v.getElementsByTagName("texcoord")[uvset]
+        u = uv.getAttribute("u")
+        vv = uv.getAttribute("v")
+        uvbufs[uvset] += [float(u), float(vv)]
 
 indices = []
 triangles = faces.getElementsByTagName("face")
@@ -149,13 +148,17 @@ for i, n in enumerate(normals):
     else:
         print >> fglge,  fix(n) + ",",
 print >> fglge,  "</normals>"
-print >> fglge,  "    <uv1>",
-for i, j in enumerate(uvs):
-    if i==len(uvs)-1:
-        print >> fglge,  fix(j),
-    else:
-        print >> fglge,  fix(j) + ",",
-print >> fglge,  "</uv1>"
+
+for n, uvs in enumerate(uvbufs):
+    print >> fglge,  "    <uv" + str(n+1) + ">",
+    for i, j in enumerate(uvs):
+        if i==len(uvs)-1:
+            print >> fglge,  fix(j),
+        else:
+            print >> fglge,  fix(j) + ",",
+
+    print >> fglge, "</uv" + str(n+1) + ">"
+
 print >> fglge,  "    <faces>",
 for i, j in enumerate(indices):
     if i==len(indices)-1:
@@ -177,10 +180,12 @@ for tx, unit in zip(dltextures, dlunits):
         tx = tx[8:]
     if "." in tx:
         tx = tx[:tx.rfind(".")]
-    print >> fglge, '    <texture id="' + tx + '" src="images/' + tx + '.jpg" />'
+    if tx != "white":
+        print >> fglge, '    <texture id="' + tx + '" src="images/' + tx + '.jpg" />'
     try:
         texType = {"Diffuse":"M_COLOR","Specular":"M_SPECULAR","Normal":"M_NOR","Bump":"M_BUMP"}[unit]
-        print >> fglge, '    <material_layer texture="#' + tx + '" mapinput = "UV1" mapto="'+texType+'" />'
+        print >> fglge, '    <material_layer texture="#' + tx + '" mapinput = "UV' + \
+            str(uvsets[unit]) + '" mapto="'+texType+'" />'
     except:
         pass
 print >> fglge, '</material>'
