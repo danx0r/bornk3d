@@ -48,6 +48,7 @@ mesh = x.getElementsByTagName("mesh")[0]
 submeshes = x.getElementsByTagName("submeshes")[0]
 submesh = submeshes.getElementsByTagName("submesh")[0]
 material = submesh.getAttribute("material")
+matname = material[material.rfind(":")+1:]
 print >> sys.stderr, "material:", material
 fscript = name + ".os"
 print >> sys.stderr, "script:", fscript
@@ -58,14 +59,21 @@ lins = f.readlines()
 f.close()
 uvsets = {}
 dltextures = []
+dlunits = []
+osMat=""
 for i, lin in enumerate(lins):
     lin = lin.strip()
+    if lin[:9]=="material ":
+        osMat = lin[9:].split()[0]
+    if not osMat==matname:
+        continue
     if lin[:13]=="texture_unit ":
         unit = lin[13:]
     if ".dds" in lin and lin[:8]=="texture ":
         print >> sys.stderr, "  texture unit:", unit
         print >> sys.stderr, "    texture:", lin[8:]
         dltextures.append(lin[8:].strip())
+        dlunits.append(unit)
         nxt = lins[i+1].strip()
         if nxt[:14]=="tex_coord_set ":
             uvsets[unit] = int(nxt[14])
@@ -73,7 +81,14 @@ for i, lin in enumerate(lins):
         else:
             print >> sys.stderr, "expected tex_coord_set..."
             0/0
-uvset = uvsets["Diffuse"]
+for i in uvsets:
+    uvset = uvsets[i]
+    if uvset != 0:
+        print >> sys.stderr, "uvset conflict! <enter> to continue?"
+        r = raw_input()
+        if len(r) and r[0]!="y":
+            exit()
+
 print >> sys.stderr, "capturing Diffuse uvset (" + str(uvset) + ")"
 
 faces = submesh.getElementsByTagName("faces")[0]
@@ -119,29 +134,29 @@ for t in triangles:
 ##print "indices:", indices
 
 fglge = open("data/" + name + ".glge", "w")
-print >> fglge, '<mesh id="' + name + '">'
-print >> fglge,  "<positions>",
+print >> fglge, '<mesh id="' + name + '_mesh">'
+print >> fglge,  "    <positions>",
 for i, p in enumerate(positions):
     if i==len(positions)-1:
         print >> fglge, fix(p),
     else:
         print>> fglge, fix(p) + ",",
 print >> fglge,  "</positions>"
-print >> fglge,  "<normals>",
+print >> fglge,  "    <normals>",
 for i, n in enumerate(normals):
     if i==len(normals)-1:
         print >> fglge,  fix(n),
     else:
         print >> fglge,  fix(n) + ",",
 print >> fglge,  "</normals>"
-print >> fglge,  "<uv1>",
+print >> fglge,  "    <uv1>",
 for i, j in enumerate(uvs):
     if i==len(uvs)-1:
         print >> fglge,  fix(j),
     else:
         print >> fglge,  fix(j) + ",",
 print >> fglge,  "</uv1>"
-print >> fglge,  "<faces>",
+print >> fglge,  "    <faces>",
 for i, j in enumerate(indices):
     if i==len(indices)-1:
         print >> fglge,  j,
@@ -149,6 +164,26 @@ for i, j in enumerate(indices):
         print >> fglge,  str(j) + ",",
 print >> fglge,  "</faces>"
 print >> fglge,  "</mesh>"
+
+seenTex = set()
+print >> fglge, '<material id="' + name + '_mat">'
+for tx, unit in zip(dltextures, dlunits):
+    if tx in seenTex:
+        continue
+    seenTex.add(tx)
+    if tx[0] == '"' and tx[-1] == '"':
+        tx = tx[1:-1]
+    if tx[:8] == "meru:///":
+        tx = tx[8:]
+    if "." in tx:
+        tx = tx[:tx.rfind(".")]
+    print >> fglge, '    <texture id="' + tx + '" src="images/' + tx + '.jpg" />'
+    try:
+        texType = {"Diffuse":"M_COLOR","Specular":"M_SPECULAR","Normal":"M_NOR","Bump":"M_BUMP"}[unit]
+        print >> fglge, '    <material_layer texture="#' + tx + '" mapinput = "UV1" mapto="'+texType+'" />'
+    except:
+        pass
+print >> fglge, '</material>'
 
 fglge.close()
 
@@ -159,5 +194,6 @@ for tx in dltextures:
     if tx[:8] == "meru:///":
         tx = tx[8:]
     print "tx:", tx
-    getCdnAsset(tx)
-    mv(tx, "data/"+tx)
+    if not os.path.exists("data/"+tx):
+        getCdnAsset(tx)
+        mv(tx, "data/"+tx)
