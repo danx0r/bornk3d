@@ -182,10 +182,10 @@ for subnum, submesh in enumerate(submeshes.getElementsByTagName("submesh")):
             tx = tx[1:-1]
         if tx[:8] == "meru:///":
             tx = tx[8:]
-        if tx == "white":
-            continue
         if "." in tx:
             tx = tx[:tx.rfind(".")]
+        if tx == "white":
+            continue
         print >> fglge, '    <texture id="' + tx + '" src="images/' + tx + '.jpg" />'
         try:
             texType = {"Diffuse":"M_COLOR","Specular":"M_SPECULAR","Normal":"M_NOR","Bump":"M_BUMP"}[unit]
@@ -194,15 +194,16 @@ for subnum, submesh in enumerate(submeshes.getElementsByTagName("submesh")):
             pass
     print >> fglge, '</material>'
 
+    print >> sys.stderr, "attempting to download textures"
+    for tx in dltextures:
+        if tx[0] == '"' and tx[-1] == '"':
+            tx = tx[1:-1]
+        if tx[:8] == "meru:///":
+            tx = tx[8:]
+        print "tx:", tx
+        if not os.path.exists("data/"+tx):
+            getCdnAsset(tx)
+            mv(tx, "data/"+tx)
+
 fglge.close()
 
-print >> sys.stderr, "attempting to download textures"
-for tx in dltextures:
-    if tx[0] == '"' and tx[-1] == '"':
-        tx = tx[1:-1]
-    if tx[:8] == "meru:///":
-        tx = tx[8:]
-    print "tx:", tx
-    if not os.path.exists("data/"+tx):
-        getCdnAsset(tx)
-        mv(tx, "data/"+tx)
